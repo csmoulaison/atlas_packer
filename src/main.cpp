@@ -1,10 +1,8 @@
 #include <stdio.h>
+#include <vector>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
-
-#define STB_RECT_PACK_IMPLEMENTATION
-#include <stb_rect_pack.h>
 
 #define CSM_BASE_IMPLEMENTATION
 #include "base/base.h"
@@ -16,6 +14,16 @@ struct FontChar {
 	u32 size[2];
 	i32 bearing[2];
 	u32 advance;
+};
+
+struct PackRect {
+	u32 x, y, w, h;
+	bool packed = false;
+};
+
+// Represents an empty space in the atlas being packed.
+struct PackNode {
+	i32 x, y, w, h;
 };
 
 int main(int argc, char** argv) {
@@ -72,7 +80,7 @@ int main(int argc, char** argv) {
 	FT_Done_Face(face);
 	FT_Done_FreeType(ft);
 
-	// Debug print characters.
+	/* Debug print characters.
 	for(u32 j = 0; j < FONT_CHARS_LEN; j++) {
 		FontChar* c = &char_list[j];
 		printf("CHARACTER\ns: %u %u, b: %u %u, a: %u\n", c->size[0], c->size[1], c->bearing[0], c->bearing[1], c->advance);
@@ -83,5 +91,87 @@ int main(int argc, char** argv) {
 			printf("%c", p);
 		}
 		getchar();
+	} */
+
+
+	// NOW: CODE COPIED FROM:
+	// https://www.david-colson.com/2020/03/10/exploring-rect-packing.html
+	// 
+	// 1. Adapt to our style to understand. No vectors, snake case, etc.
+	// 2. Render to the packed rect locations.
+	// 3. Pack texture and character data into binary file and save to disk.
+	std::vector<PackRect> rects;
+	// NOW: Populate rects from FontChar data.
+	// - sort rects by area?
+	 
+	std::vector<PackNode> leaves;
+
+	// NOW: 700x700 is implicit here, I guess? We want to choose something relative
+	// to the chosen font size presumably, and we might want it to be a power of 2.
+	// 
+	// Our initial node is the entire image
+	leaves.push_back({0, 0, 700, 700});
+
+	for (PackRect& rect : rects)
+	{
+		bool done = false;
+		// Backward iterate over nodes
+		for (int i = (int)leaves.size() - 1; i >= 0 && !done; --i) {
+			PackNode& node = leaves[i];
+
+			// If the node is big enough, we've found a suitable spot for our rectangle
+			if (node.w > rect.w && node.h > rect.h) {
+				rect.x = node.x;
+				rect.y = node.y;
+
+				// Split the rectangle, calculating the unused space
+				int remainingWidth = node.w - rect.w;
+				int remainingHeight = node.h - rect.h;
+
+				PackNode newSmallerNode;
+				PackNode newLargerNode;
+				// We can work out which way we need to split by checking which
+				//  remaining dimension is larger
+				if (remainingHeight > remainingWidth) {
+					// The lesser split here will be the top right
+					newSmallerNode.x = node.x + rect.w;
+					newSmallerNode.y = node.y;
+					newSmallerNode.w = remainingWidth;
+					newSmallerNode.h = rect.h;
+
+					newLargerNode.x = node.x;
+					newLargerNode.y = node.y + rect.h;
+					newLargerNode.w = node.w;
+					newLargerNode.h = remainingHeight;
+				} else {
+					// The lesser split here will be the bottom left
+					newSmallerNode.x = node.x;
+					newSmallerNode.y = node.y + rect.h;
+					newSmallerNode.w = rect.w;
+					newSmallerNode.h = remainingHeight;
+
+					newLargerNode.x = node.x + rect.w;
+					newLargerNode.y = node.y;
+					newLargerNode.w = remainingWidth;
+					newLargerNode.h = node.h;
+				}
+
+				// Removing the node we're using up
+				leaves[i] = leaves.back();
+				leaves.pop_back();
+
+				// Push back the two new nodes, note smaller one last.
+				leaves.push_back(newLargerNode);
+				leaves.push_back(newSmallerNode);
+
+				done = true;
+			}
+		}
+
+		if (!done) {
+			continue;
+		}
+
+		rect.packed = true;
 	}
 }
