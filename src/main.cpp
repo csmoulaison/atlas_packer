@@ -118,20 +118,20 @@ PackRect* rects, FontChar* chars) {
 	Arena file_arena;
 	arena_init(&file_arena, GIGABYTE);
 
-	//*((u32*)arena_alloc(&file_arena, sizeof(u32))) = atlas_length;
-	//*((u32*)arena_alloc(&file_arena, sizeof(u32))) = FONT_CHARS_LEN;
-	//for(i32 i = 0; i < FONT_CHARS_LEN; i++) {
-	//	SerialChar* ch = &serial_chars[i];
-	//	
-	//	*((u32*)arena_alloc(&file_arena, sizeof(u32))) = ch->x;
-	//	*((u32*)arena_alloc(&file_arena, sizeof(u32))) = ch->y;
-	//	*((u32*)arena_alloc(&file_arena, sizeof(u32))) = ch->w;
-	//	*((u32*)arena_alloc(&file_arena, sizeof(u32))) = ch->h;
+	*((u32*)arena_alloc(&file_arena, sizeof(u32))) = atlas_length;
+	*((u32*)arena_alloc(&file_arena, sizeof(u32))) = FONT_CHARS_LEN;
+	for(i32 i = 0; i < FONT_CHARS_LEN; i++) {
+		SerialChar* ch = &serial_chars[i];
+		
+		*((u32*)arena_alloc(&file_arena, sizeof(u32))) = ch->x;
+		*((u32*)arena_alloc(&file_arena, sizeof(u32))) = ch->y;
+		*((u32*)arena_alloc(&file_arena, sizeof(u32))) = ch->w;
+		*((u32*)arena_alloc(&file_arena, sizeof(u32))) = ch->h;
 
-	//	*((i32*)arena_alloc(&file_arena, sizeof(i32))) = ch->bearing[0];
-	//	*((i32*)arena_alloc(&file_arena, sizeof(i32))) = ch->bearing[1];
-	//	*((u32*)arena_alloc(&file_arena, sizeof(u32))) = ch->advance;;
-	//}
+		*((i32*)arena_alloc(&file_arena, sizeof(i32))) = ch->bearing[0];
+		*((i32*)arena_alloc(&file_arena, sizeof(i32))) = ch->bearing[1];
+		*((u32*)arena_alloc(&file_arena, sizeof(u32))) = ch->advance;;
+	}
 	for(u32 i = 0; i < atlas_area; i++) {
 		*((u8*)arena_alloc(&file_arena, sizeof(u8))) = atlas[i];
 	}
