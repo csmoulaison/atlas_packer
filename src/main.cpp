@@ -37,7 +37,7 @@ struct SerialChar {
 };
 
 bool pack(u32 font_size, i32 atlas_length, i32 atlas_area, 
-PackRect* rects, FontChar* chars) {
+PackRect* rects, FontChar* chars, const char* out_fname) {
 	// Pack rects using shelf algorithm.
 	i32 curx = 0;
 	i32 cury = 0;
@@ -137,7 +137,7 @@ PackRect* rects, FontChar* chars) {
 	}
 
 	// Write to file
-	FILE* f = fopen("out.cmfont", "w");
+	FILE* f = fopen(out_fname, "w");
 	size_t s = fwrite(file_arena.region, 1, file_arena.index, f);
 	printf("Wrote %u bytes (%u)\n", s, file_arena.index);
 	printf("Image length: %u\n", atlas_length);
@@ -148,21 +148,15 @@ PackRect* rects, FontChar* chars) {
 
 int main(int argc, char** argv) {
 	// Validate arguments
-	if(argc < 2) {
-		printf("Requires a font path as first argument.\n  (Usage: atlas font.tff 12)\n");
-		return 1;
-	}
-	if(argc < 3) {
-		printf("Requires a font size after font path argument.\n  (Usage: atlas font.tff 12)\n");
-		return 1;
-	}
-	if(argc > 3) {
-		printf("Too many arguments.\n  (Usage: atlas font.tff 12)\n");
+	if(argc != 4) {
+		printf("  Usage: atlas <in_file> <out_file> <font-size>\n");
 		return 1;
 	}
 
-	const char* filename = argv[1];
-	i32 font_size = atoi(argv[2]);
+	const char* in_filename = argv[1];
+	const char* out_filename = argv[2];
+
+	i32 font_size = atoi(argv[3]);
 	if(font_size == 0) {
 		printf("Invalid font size argument.\n  (Usage: atlas font.tff 12)\n");
 		return 1;
@@ -173,7 +167,7 @@ int main(int argc, char** argv) {
 	if (FT_Init_FreeType(&ft)) { panic(); }
 
 	FT_Face face;
-	if(FT_New_Face(ft, filename, 0, &face)) { panic(); }
+	if(FT_New_Face(ft, in_filename, 0, &face)) { panic(); }
 
 	FT_Set_Pixel_Sizes(face, 0, font_size);
 
@@ -226,7 +220,7 @@ int main(int argc, char** argv) {
 	// TODO: Just keep trying to pack and double on each attempt.
 	i32 atlas_length = 2;
 	i32 atlas_area = 0;
-	while(pack(font_size, atlas_length, atlas_area, rects, chars) == false) {
+	while(pack(font_size, atlas_length, atlas_area, rects, chars, out_filename) == false) {
 		atlas_length *= 2;
 		atlas_area = atlas_length * atlas_length;
 
