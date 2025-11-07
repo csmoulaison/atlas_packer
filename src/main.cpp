@@ -36,6 +36,8 @@ struct SerialChar {
 	u32 advance;
 };
 
+bool verbose;
+
 bool pack(u32 font_size, i32 atlas_length, i32 atlas_area, 
 PackRect* rects, FontChar* chars, const char* out_fname) {
 	// Pack rects using shelf algorithm.
@@ -57,16 +59,20 @@ PackRect* rects, FontChar* chars, const char* out_fname) {
 			cur_shelf_size = rect->h;
 			curx = 0;
 
-			printf("new shelf! x,y,h:%i,%i,%i\n", curx, cury, cur_shelf_size);
+			if(verbose) {
+				printf("New shelf! x,y,h:%i,%i,%i\n", curx, cury, cur_shelf_size);
+			}
 		}
 
 		rect->x = curx;
 		rect->y = cury;
-		printf("Rect packed (x,y,w,h): %.3u,%.3u,%.3u,%.3u\n", 
-			rect->x,
-			rect->y,
-			rect->w,
-			rect->h);
+		if(verbose) {
+			printf("Rect packed (x,y,w,h): %.3u,%.3u,%.3u,%.3u\n", 
+				rect->x,
+				rect->y,
+				rect->w,
+				rect->h);
+		}
 		curx += rect->w;
 
 		if(cury + cur_shelf_size >= atlas_length) {
@@ -148,9 +154,14 @@ PackRect* rects, FontChar* chars, const char* out_fname) {
 
 int main(int argc, char** argv) {
 	// Validate arguments
-	if(argc != 4) {
+	if(argc < 4) {
 		printf("  Usage: atlas <in_file> <out_file> <font-size>\n");
 		return 1;
+	}
+
+	verbose = false;
+	if(argc == 5 && strcmp(argv[4], "verbose") == 0) {
+		verbose = true;
 	}
 
 	const char* in_filename = argv[1];
